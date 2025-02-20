@@ -129,13 +129,4 @@ contract IPOCrossLaunch {
         }
         emit AuctionFinalized(clearingPrice);
     }
-
-    /// @notice View the order details for a given buyer.
-    /// @param buyer The address to check.
-    /// @return price The bid price and quantity from the order (both uint256).
-    function getOrder(address buyer) external view returns (uint256 price, uint256 quantity) {
-        require(hasOrder[buyer], "No active order");
-        Order memory order = buyOrders[buyer];
-        return (uint256(order.price), uint256(order.quantity));
-    }
 }
