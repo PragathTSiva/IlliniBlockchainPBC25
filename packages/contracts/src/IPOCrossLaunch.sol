@@ -184,10 +184,4 @@ contract IPOCrossLaunch {
         require(totalUSDCLocked == 0, "Not all USDC has been accounted for");
         emit AuctionFinalized(clearingPrice);
     }
-
-    function getOrder(address buyer) external view returns (uint256 price, uint256 quantity) {
-        require(hasOrder[buyer], "No active order");
-        Order memory order = buyOrders[buyer];
-        return (uint256(order.price), uint256(order.quantity));
-    }
 }
