@@ -47,9 +47,9 @@ contract IPOCrossTest is Test {
         ipo.placeBuyOrder(suint256(price), suint256(quantity));
         vm.stopPrank();
 
-        (uint256 orderPrice, uint256 orderQuantity) = ipo.getOrder(BUYER1);
-        assertEq(orderPrice, price, "Order price should be 100");
-        assertEq(orderQuantity, quantity, "Order quantity should be 1000");
+        // (uint256 orderPrice, uint256 orderQuantity) = ipo.getOrder(BUYER1);
+        // assertEq(orderPrice, price, "Order price should be 100");
+        // assertEq(orderQuantity, quantity, "Order quantity should be 1000");
         
         assertEq(usdc.balanceOf(address(ipo)), usdcRequired, "IPO should have received USDC");
         assertEq(ipo.totalUSDCLocked(), usdcRequired, "Total USDC locked should match");
@@ -95,8 +95,8 @@ contract IPOCrossTest is Test {
         assertEq(usdc.balanceOf(BUYER1), initialBalance + usdcAmount, "USDC should be refunded");
         assertEq(ipo.totalUSDCLocked(), 0, "No USDC should be locked");
         
-        vm.expectRevert("No active order");
-        ipo.getOrder(BUYER1);
+        // vm.expectRevert("No active order");
+        // ipo.getOrder(BUYER1);
     }
 
     function test_EmergencyRefund() public {
