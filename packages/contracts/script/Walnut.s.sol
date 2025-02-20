@@ -194,3 +194,4 @@ contract TestIPOFactory is Test {
         assertEq(ipo.owner(), creator);
     }
 }
+

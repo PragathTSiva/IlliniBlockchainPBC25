@@ -1,17 +1,22 @@
 {
-  "name": "walnut-cli",
-  "license": "MIT License",
-  "type": "module",
+  "name": "@ipocross/cli",
+  "version": "0.1.0",
+  "private": true,
   "scripts": {
-    "dev": "bun run src/index.ts"
+    "build": "tsc",
+    "create": "ts-node src/commands/create.ts",
+    "submit-orders": "ts-node src/commands/submit-orders.ts",
+    "get-price": "ts-node src/commands/get-price.ts",
+    "finalize": "ts-node src/commands/finalize.ts"
   },
   "dependencies": {
-    "dotenv": "^16.4.7",
-    "seismic-viem": "1.0.12",
-    "viem": "^2.22.3"
+    "dotenv": "^16.4.1",
+    "seismic-viem": "^1.0.16",
+    "viem": "^2.7.1"
   },
   "devDependencies": {
-    "@types/node": "^22.7.6",
-    "typescript": "^5.6.3"
+    "@types/node": "^20.11.16",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3"
   }
 }
