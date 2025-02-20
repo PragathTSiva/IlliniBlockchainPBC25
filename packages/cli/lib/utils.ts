@@ -2,10 +2,11 @@ import fs from 'fs'
 import { type ShieldedWalletClient, getShieldedContract } from 'seismic-viem'
 import { Abi, Address } from 'viem'
 
-async function getShieldedContractWithCheck(
-  walletClient: ShieldedWalletClient,
+
+export async function getShieldedContractWithCheck(
   abi: Abi,
-  address: Address
+  address: Address,
+  walletClient: ShieldedWalletClient
 ) {
   const contract = getShieldedContract({
     abi: abi,
@@ -23,20 +24,7 @@ async function getShieldedContractWithCheck(
   return contract
 }
 
-function readContractAddress(broadcastFile: string): `0x${string}` {
-  const broadcast = JSON.parse(fs.readFileSync(broadcastFile, 'utf8'))
-  if (!broadcast.transactions?.[0]?.contractAddress) {
-    throw new Error('Invalid broadcast file format')
-  }
-  return broadcast.transactions[0].contractAddress
+export function readContractABI(path: string): Abi {
+  const abiJson = fs.readFileSync(path, 'utf-8')
+  return JSON.parse(abiJson) as Abi
 }
-
-function readContractABI(abiFile: string): Abi {
-  const abi = JSON.parse(fs.readFileSync(abiFile, 'utf8'))
-  if (!abi.abi) {
-    throw new Error('Invalid ABI file format')
-  }
-  return abi.abi
-}
-
-export { getShieldedContractWithCheck, readContractAddress, readContractABI }

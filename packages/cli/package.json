@@ -1,11 +1,12 @@
 {
   "name": "@ipocross/cli",
   "version": "0.1.0",
+  "type": "module",
   "scripts": {
     "build": "tsc",
     "deploy": "ts-node scripts/deploy.ts",
     "start": "chmod +x scripts/start.sh && ./scripts/start.sh",
-    "cli": "ts-node src/cli.ts",
+    "cli": "node --loader ts-node/esm src/cli.ts",
     "create": "ts-node src/commands/create.ts",
     "submit-orders": "ts-node src/commands/submit-orders.ts",
     "get-price": "ts-node src/commands/get-price.ts",
@@ -22,5 +23,11 @@
     "@types/commander": "^2.12.2",
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3"
-  }
+  }, "compilerOptions": {
+       "module": "commonjs",
+       "target": "ES2020",
+       "esModuleInterop": true,
+       "moduleResolution": "node"
+     },
+     "include": ["src"]
 }
