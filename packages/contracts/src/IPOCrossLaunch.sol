@@ -82,12 +82,13 @@ contract IPOCrossLaunch {
             if (hasOrder[participant]) {
                 Order memory order = buyOrders[participant];
                 // Multiply price by quantity and accumulate.
-                totalPrice = suint256(uint256(totalPrice) + (uint256(order.price) * uint256(order.quantity)));
-                totalQuantity = suint256(uint256(totalQuantity) + uint256(order.quantity));
+                totalPrice = totalPrice + (order.price * order.quantity);
+                totalQuantity = totalQuantity + order.quantity;
             }
         }
+        
+        uint256 avgPrice = uint256(totalPrice / totalQuantity);
         require(uint256(totalQuantity) > 0, "No orders have been placed.");
-        uint256 avgPrice = uint256(totalPrice) / uint256(totalQuantity);
         return avgPrice;
     }
 
@@ -127,14 +128,5 @@ contract IPOCrossLaunch {
             }
         }
         emit AuctionFinalized(clearingPrice);
-    }
-
-    /// @notice View the order details for a given buyer.
-    /// @param buyer The address to check.
-    /// @return price The bid price and quantity from the order (both uint256).
-    function getOrder(address buyer) external view returns (uint256 price, uint256 quantity) {
-        require(hasOrder[buyer], "No active order");
-        Order memory order = buyOrders[buyer];
-        return (uint256(order.price), uint256(order.quantity));
     }
 }
