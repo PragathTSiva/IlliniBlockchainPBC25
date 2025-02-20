@@ -167,7 +167,7 @@ contract TestIPOCrossLaunch is Test {
         // In this test, the total ordered quantity is 300, which is below the 60% cap.
         assertEq(token.balanceOf(buyer1), 100);
         assertEq(token.balanceOf(buyer2), 200);
-        // And the IPO contract’s token balance should have decreased accordingly.
+        // And the IPO contract's token balance should have decreased accordingly.
     }
 }
 
