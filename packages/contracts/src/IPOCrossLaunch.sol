@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.8;
 
-import {ERC20} from "./ERC20Token.sol";
+import {ERC20Mintable} from "./ERC20Mintable.sol";
 
 contract IPOCrossLaunch {
     struct Order {
@@ -20,8 +20,8 @@ contract IPOCrossLaunch {
     bool public auctionEnded;
     uint256 public totalUSDCLocked;
 
-    ERC20 public token;
-    ERC20 public USDC;
+    ERC20Mintable public token;
+    ERC20Mintable public USDC;
 
     event ClearingPrice(uint256 price);
     event AuctionFinalized(uint256 clearingPrice);
@@ -38,8 +38,8 @@ contract IPOCrossLaunch {
     }
 
     constructor(address tokenAddress, address usdcAddress, address auctionOwner) {
-        token = ERC20(tokenAddress);
-        USDC = ERC20(usdcAddress);
+        token = ERC20Mintable(tokenAddress);
+        USDC = ERC20Mintable(usdcAddress);
         owner = auctionOwner;
         startTime = block.timestamp;
         auctionEnded = false;
