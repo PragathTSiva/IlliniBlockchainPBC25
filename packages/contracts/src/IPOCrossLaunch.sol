@@ -1,36 +1,31 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.8;
 
-// Uncomment and adjust the following import if you have a Seismic shielded types library.
-// import "@seismic/crypto-lib.sol"; 
-import {ERC20Token} from "./ERC20Token.sol";
-// For demonstration, we assume that suint256 is a type alias for a shielded uint256.
-// You may need to adjust this to your actual Seismic implementation.
+import {ERC20} from "./ERC20Token.sol";
 
 contract IPOCrossLaunch {
-    // Struct to store buy order information using shielded types.
     struct Order {
-        suint256 price;    // Price per token (in USD, shielded)
-        suint256 quantity; // Quantity of tokens desired (shielded)
+        suint256 price;
+        suint256 quantity;
+        uint256 index;
+        uint256 usdcAmount;
     }
 
-    // Mapping to store buy orders by address.
     mapping(address => Order) private buyOrders;
     mapping(address => bool) private hasOrder;
     address[] private participants;
 
     address public owner;
-    uint256 public startTime;  // Timestamp when this contract was deployed.
+    uint256 public startTime;
     bool public auctionEnded;
+    uint256 public totalUSDCLocked;
 
-    // The ERC20 token that will be distributed.
-    ERC20Token public token;
+    ERC20 public token;
+    ERC20 public USDC;
 
-    // Updated Events using uint256 instead of shielded suint256.
     event ClearingPrice(uint256 price);
-    event OrderPlaced(address indexed buyer, uint256 price2, uint256 quantity);
-    event OrderCancelled(address indexed buyer);
     event AuctionFinalized(uint256 clearingPrice);
+    event EmergencyRefund(address user, uint256 amount);
 
     modifier onlyOwner() {
         require(msg.sender == owner, "Not owner");
@@ -42,37 +37,61 @@ contract IPOCrossLaunch {
         _;
     }
 
-    /// @param tokenAddress The address of the ERC20 token deployed in the factory.
-    /// @param auctionOwner The address allowed to end the auction.
-    constructor(address tokenAddress, address auctionOwner) {
-        token = ERC20Token(tokenAddress);
+    constructor(address tokenAddress, address usdcAddress, address auctionOwner) {
+        token = ERC20(tokenAddress);
+        USDC = ERC20(usdcAddress);
         owner = auctionOwner;
         startTime = block.timestamp;
         auctionEnded = false;
     }
 
-    /// @notice Place or update a buy order.
-    /// @param price The bid price per token (as a shielded suint256).
-    /// @param quantity The amount of tokens to buy (as a shielded suint256).
     function placeBuyOrder(suint256 price, suint256 quantity) external auctionActive {
-        if (!hasOrder[msg.sender]) {
-            participants.push(msg.sender);
-        }
-        buyOrders[msg.sender] = Order(price, quantity);
+        require(!hasOrder[msg.sender], "Order already exists");
+
+        uint256 usdcAmount = uint256(price * quantity);
+        require(USDC.balanceOf(msg.sender) >= usdcAmount, "Insufficient USDC balance");
+        require(USDC.allowance(msg.sender, address(this)) >= usdcAmount, "Insufficient USDC allowance");
+
+        bool success = USDC.transferFrom(msg.sender, address(this), usdcAmount);
+        require(success, "USDC transfer failed");
+
+        participants.push(msg.sender);
+        buyOrders[msg.sender] = Order(price, quantity, participants.length - 1, usdcAmount);
         hasOrder[msg.sender] = true;
-        emit OrderPlaced(msg.sender, uint256(price), uint256(quantity));
+
+        totalUSDCLocked += usdcAmount;
     }
 
-    /// @notice Cancel an existing buy order.
     function cancelBuyOrder() external auctionActive {
         require(hasOrder[msg.sender], "No active order found");
+        
+        uint256 refundAmount = buyOrders[msg.sender].usdcAmount;
+        require(USDC.transfer(msg.sender, refundAmount), "USDC refund failed");
+        
+        totalUSDCLocked -= refundAmount;
         delete buyOrders[msg.sender];
         hasOrder[msg.sender] = false;
-        emit OrderCancelled(msg.sender);
     }
 
-    /// @notice Compute the weighted average price (the "clearing price") of all active orders.
-    /// @return The weighted average price as a uint256.
+    function emergencyRefund() external onlyOwner auctionActive {
+        require(!auctionEnded, "Auction already finalized");
+        
+        for (uint i = 0; i < participants.length; i++) {
+            address participant = participants[i];
+            if (hasOrder[participant]) {
+                uint256 refundAmount = buyOrders[participant].usdcAmount;
+                require(USDC.transfer(participant, refundAmount), "USDC refund failed");
+                emit EmergencyRefund(participant, refundAmount);
+                
+                delete buyOrders[participant];
+                hasOrder[participant] = false;
+            }
+        }
+        
+        totalUSDCLocked = 0;
+        auctionEnded = true;
+    }
+
     function calculateWeightedAveragePrice() public view returns (uint256) {
         suint256 totalPrice = suint256(uint256(0));
         suint256 totalQuantity = suint256(uint256(0));
@@ -81,7 +100,6 @@ contract IPOCrossLaunch {
             address participant = participants[i];
             if (hasOrder[participant]) {
                 Order memory order = buyOrders[participant];
-                // Multiply price by quantity and accumulate.
                 totalPrice = totalPrice + (order.price * order.quantity);
                 totalQuantity = totalQuantity + order.quantity;
             }
@@ -92,16 +110,11 @@ contract IPOCrossLaunch {
         return avgPrice;
     }
 
-    /// @notice Emit an event showing the current clearing price.
     function displayClearingPrice() public {
         uint256 clearingPrice = calculateWeightedAveragePrice();
         emit ClearingPrice(clearingPrice);
     }
 
-    /// @notice Finalize the auction (only callable by the owner). After finalization:
-    ///         - No new orders are accepted.
-    ///         - Orders with bid prices >= clearing price are fulfilled,
-    ///           but only up to 60% of the token supply is distributed.
     function finalizeAuction() external onlyOwner auctionActive {
         auctionEnded = true;
         uint256 clearingPrice = calculateWeightedAveragePrice();
@@ -112,21 +125,59 @@ contract IPOCrossLaunch {
         suint256 maxDistribution = suint256((uint256(tokenTotalSupplyS) * 60) / 100);
         suint256 distributed = suint256(uint256(0));
 
+        for (uint i = 0; i < participants.length - 1; i++) {
+            for (uint j = 0; j < participants.length - i - 1; j++) {
+                address addr1 = participants[j];
+                address addr2 = participants[j + 1];
+                
+                if (hasOrder[addr1] && hasOrder[addr2]) {
+                    Order memory order1 = buyOrders[addr1];
+                    Order memory order2 = buyOrders[addr2];
+                    
+                    if (uint256(order1.price) < uint256(order2.price)) {
+                        address temp = participants[j];
+                        participants[j] = participants[j + 1];
+                        participants[j + 1] = temp;
+                    }
+                }
+            }
+        }
+
         for (uint i = 0; i < participants.length && uint256(distributed) < uint256(maxDistribution); i++) {
             address buyer = participants[i];
             if (hasOrder[buyer]) {
                 Order memory order = buyOrders[buyer];
-                // Only fulfill orders with a bid price at or above the clearing price.
                 if (uint256(order.price) >= clearingPrice) {
                     suint256 quantityToFulfill = order.quantity;
-                    if (uint256(distributed) + uint256(quantityToFulfill) > uint256(maxDistribution)) {
-                        quantityToFulfill = suint256(uint256(maxDistribution) - uint256(distributed));
+                    suint256 remainingDistribution = suint256(uint256(maxDistribution) - uint256(distributed));
+                    
+                    if (uint256(quantityToFulfill) > uint256(remainingDistribution)) {
+                        quantityToFulfill = remainingDistribution;
+                        
+                        uint256 unfilledQuantity = uint256(order.quantity - quantityToFulfill);
+                        uint256 refundAmount = uint256(order.price) * unfilledQuantity;
+                        require(USDC.transfer(buyer, refundAmount), "USDC refund failed");
+                        totalUSDCLocked -= refundAmount;
+                        
+                        buyOrders[buyer].quantity = order.quantity - quantityToFulfill;
+                        buyOrders[buyer].usdcAmount -= refundAmount;
+                    } else {
+                        delete buyOrders[buyer];
+                        hasOrder[buyer] = false;
                     }
+
                     token.transfer(buyer, uint256(quantityToFulfill));
-                    distributed = suint256(uint256(distributed) + uint256(quantityToFulfill));
+                    distributed = distributed + quantityToFulfill;
+                } else {
+                    require(USDC.transfer(buyer, order.usdcAmount), "USDC refund failed");
+                    totalUSDCLocked -= order.usdcAmount;
+                    delete buyOrders[buyer];
+                    hasOrder[buyer] = false;
                 }
             }
         }
+        
+        require(totalUSDCLocked == 0, "Not all USDC has been accounted for");
         emit AuctionFinalized(clearingPrice);
     }
 }
