@@ -82,12 +82,13 @@ contract IPOCrossLaunch {
             if (hasOrder[participant]) {
                 Order memory order = buyOrders[participant];
                 // Multiply price by quantity and accumulate.
-                totalPrice = suint256(uint256(totalPrice) + (uint256(order.price) * uint256(order.quantity)));
-                totalQuantity = suint256(uint256(totalQuantity) + uint256(order.quantity));
+                totalPrice = totalPrice + (order.price * order.quantity);
+                totalQuantity = totalQuantity + order.quantity;
             }
         }
+        
+        uint256 avgPrice = uint256(totalPrice / totalQuantity);
         require(uint256(totalQuantity) > 0, "No orders have been placed.");
-        uint256 avgPrice = uint256(totalPrice) / uint256(totalQuantity);
         return avgPrice;
     }
 
