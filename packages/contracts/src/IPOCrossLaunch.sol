@@ -46,6 +46,8 @@ contract IPOCrossLaunch {
     }
 
     function placeBuyOrder(suint256 price, suint256 quantity) external auctionActive {
+        require(!hasOrder[msg.sender], "Order already exists");
+
         uint256 usdcAmount = uint256(price * quantity);
         require(USDC.balanceOf(msg.sender) >= usdcAmount, "Insufficient USDC balance");
         require(USDC.allowance(msg.sender, address(this)) >= usdcAmount, "Insufficient USDC allowance");
@@ -53,19 +55,11 @@ contract IPOCrossLaunch {
         bool success = USDC.transferFrom(msg.sender, address(this), usdcAmount);
         require(success, "USDC transfer failed");
 
-        if (!hasOrder[msg.sender]) {
-            participants.push(msg.sender);
-        }
-
-        uint256 previousUSDC = 0;
-        if (hasOrder[msg.sender]) {
-            previousUSDC = buyOrders[msg.sender].usdcAmount;
-        }
-
+        participants.push(msg.sender);
         buyOrders[msg.sender] = Order(price, quantity, participants.length - 1, usdcAmount);
         hasOrder[msg.sender] = true;
 
-        totalUSDCLocked = totalUSDCLocked + usdcAmount - previousUSDC;
+        totalUSDCLocked += usdcAmount;
     }
 
     function cancelBuyOrder() external auctionActive {
