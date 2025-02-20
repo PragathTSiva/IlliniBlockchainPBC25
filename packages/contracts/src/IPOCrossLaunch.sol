@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.8;
 
-import {ERC20} from "./ERC20Token.sol";
+import {ERC20Mintable} from "./ERC20Mintable.sol";
 
 contract IPOCrossLaunch {
     struct Order {
@@ -20,8 +20,8 @@ contract IPOCrossLaunch {
     bool public auctionEnded;
     uint256 public totalUSDCLocked;
 
-    ERC20 public token;
-    ERC20 public USDC;
+    ERC20Mintable public token;
+    ERC20Mintable public USDC;
 
     event ClearingPrice(uint256 price);
     event AuctionFinalized(uint256 clearingPrice);
@@ -38,8 +38,8 @@ contract IPOCrossLaunch {
     }
 
     constructor(address tokenAddress, address usdcAddress, address auctionOwner) {
-        token = ERC20(tokenAddress);
-        USDC = ERC20(usdcAddress);
+        token = ERC20Mintable(tokenAddress);
+        USDC = ERC20Mintable(usdcAddress);
         owner = auctionOwner;
         startTime = block.timestamp;
         auctionEnded = false;
@@ -48,7 +48,7 @@ contract IPOCrossLaunch {
     function placeBuyOrder(suint256 price, suint256 quantity) external auctionActive {
         require(!hasOrder[msg.sender], "Order already exists");
 
-        uint256 usdcAmount = uint256(price * quantity);
+        uint256 usdcAmount = uint256(price) * uint256(quantity) / 1e18;
         require(USDC.balanceOf(msg.sender) >= usdcAmount, "Insufficient USDC balance");
         require(USDC.allowance(msg.sender, address(this)) >= usdcAmount, "Insufficient USDC allowance");
 
@@ -66,7 +66,8 @@ contract IPOCrossLaunch {
         require(hasOrder[msg.sender], "No active order found");
         
         uint256 refundAmount = buyOrders[msg.sender].usdcAmount;
-        require(USDC.transfer(msg.sender, refundAmount), "USDC refund failed");
+        bool success = USDC.transfer(msg.sender, refundAmount);
+        require(success, "USDC refund failed");
         
         totalUSDCLocked -= refundAmount;
         delete buyOrders[msg.sender];
@@ -80,34 +81,34 @@ contract IPOCrossLaunch {
             address participant = participants[i];
             if (hasOrder[participant]) {
                 uint256 refundAmount = buyOrders[participant].usdcAmount;
-                require(USDC.transfer(participant, refundAmount), "USDC refund failed");
+                bool success = USDC.transfer(participant, refundAmount);
+                require(success, "USDC refund failed");
                 emit EmergencyRefund(participant, refundAmount);
                 
+                totalUSDCLocked -= refundAmount;
                 delete buyOrders[participant];
                 hasOrder[participant] = false;
             }
         }
         
-        totalUSDCLocked = 0;
         auctionEnded = true;
     }
 
     function calculateWeightedAveragePrice() public view returns (uint256) {
-        suint256 totalPrice = suint256(uint256(0));
-        suint256 totalQuantity = suint256(uint256(0));
+        uint256 totalPriceTimesQuantity = 0;
+        uint256 totalQuantity = 0;
 
         for (uint i = 0; i < participants.length; i++) {
             address participant = participants[i];
             if (hasOrder[participant]) {
                 Order memory order = buyOrders[participant];
-                totalPrice = totalPrice + (order.price * order.quantity);
-                totalQuantity = totalQuantity + order.quantity;
+                totalPriceTimesQuantity += uint256(order.price) * uint256(order.quantity);
+                totalQuantity += uint256(order.quantity);
             }
         }
         
-        uint256 avgPrice = uint256(totalPrice / totalQuantity);
-        require(uint256(totalQuantity) > 0, "No orders have been placed.");
-        return avgPrice;
+        require(totalQuantity > 0, "No orders have been placed.");
+        return totalPriceTimesQuantity / totalQuantity;
     }
 
     function displayClearingPrice() public {
@@ -121,10 +122,8 @@ contract IPOCrossLaunch {
         emit ClearingPrice(clearingPrice);
 
         uint256 tokenTotalSupply = token.totalSupply();
-        suint256 tokenTotalSupplyS = suint256(tokenTotalSupply);
-        suint256 maxDistribution = suint256((uint256(tokenTotalSupplyS) * 60) / 100);
-        suint256 distributed = suint256(uint256(0));
-
+        uint256 maxDistribution = (tokenTotalSupply * 60) / 100;
+        uint256 distributed = 0;
         for (uint i = 0; i < participants.length - 1; i++) {
             for (uint j = 0; j < participants.length - i - 1; j++) {
                 address addr1 = participants[j];
@@ -143,33 +142,34 @@ contract IPOCrossLaunch {
             }
         }
 
-        for (uint i = 0; i < participants.length && uint256(distributed) < uint256(maxDistribution); i++) {
+        for (uint i = 0; i < participants.length && distributed < maxDistribution; i++) {
             address buyer = participants[i];
             if (hasOrder[buyer]) {
                 Order memory order = buyOrders[buyer];
                 if (uint256(order.price) >= clearingPrice) {
-                    suint256 quantityToFulfill = order.quantity;
-                    suint256 remainingDistribution = suint256(uint256(maxDistribution) - uint256(distributed));
+                    uint256 quantityToFulfill = uint256(order.quantity);
+                    uint256 remainingDistribution = maxDistribution - distributed;
                     
-                    if (uint256(quantityToFulfill) > uint256(remainingDistribution)) {
+                    if (quantityToFulfill > remainingDistribution) {
                         quantityToFulfill = remainingDistribution;
                         
-                        uint256 unfilledQuantity = uint256(order.quantity - quantityToFulfill);
-                        uint256 refundAmount = uint256(order.price) * unfilledQuantity;
-                        require(USDC.transfer(buyer, refundAmount), "USDC refund failed");
+                        uint256 unfilledQuantity = uint256(order.quantity) - quantityToFulfill;
+                        uint256 refundAmount = uint256(order.price) * unfilledQuantity / 1e18;
+                        bool success = USDC.transfer(buyer, refundAmount);
+                        require(success, "USDC refund failed");
                         totalUSDCLocked -= refundAmount;
-                        
-                        buyOrders[buyer].quantity = order.quantity - quantityToFulfill;
-                        buyOrders[buyer].usdcAmount -= refundAmount;
-                    } else {
-                        delete buyOrders[buyer];
-                        hasOrder[buyer] = false;
                     }
 
-                    token.transfer(buyer, uint256(quantityToFulfill));
-                    distributed = distributed + quantityToFulfill;
+                    bool success = token.transfer(buyer, quantityToFulfill);
+                    require(success, "Token transfer failed");
+                    distributed += quantityToFulfill;
+                    
+                    totalUSDCLocked -= order.usdcAmount;
+                    delete buyOrders[buyer];
+                    hasOrder[buyer] = false;
                 } else {
-                    require(USDC.transfer(buyer, order.usdcAmount), "USDC refund failed");
+                    bool success = USDC.transfer(buyer, order.usdcAmount);
+                    require(success, "USDC refund failed");
                     totalUSDCLocked -= order.usdcAmount;
                     delete buyOrders[buyer];
                     hasOrder[buyer] = false;
