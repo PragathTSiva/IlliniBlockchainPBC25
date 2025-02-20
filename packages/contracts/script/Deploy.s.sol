@@ -11,13 +11,10 @@ contract Deploy is Script {
         
         vm.startBroadcast(deployerPrivateKey);
 
-        // Deploy USDC mock first
         ERC20Mintable usdc = new ERC20Mintable("USD Coin", "USDC");
         
-        // Deploy the factory
         IPOFactory factory = new IPOFactory();
         factory.setUSDC(address(usdc));
-        // Create an IPO through the factory
         factory.createIPO("Test Token", "TTK");
 
         vm.stopBroadcast();

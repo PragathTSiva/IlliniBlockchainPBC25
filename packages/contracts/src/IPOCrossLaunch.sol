@@ -2,7 +2,6 @@
 pragma solidity ^0.8.8;
 
 import {ERC20Mintable} from "./ERC20Mintable.sol";
-// import {suint256} from "fhevm/lib/TFHE.sol";
 
 contract IPOCrossLaunch {
     struct Order {
@@ -125,8 +124,6 @@ contract IPOCrossLaunch {
         uint256 tokenTotalSupply = token.totalSupply();
         uint256 maxDistribution = (tokenTotalSupply * 60) / 100;
         uint256 distributed = 0;
-
-        // Sort participants by price (highest to lowest)
         for (uint i = 0; i < participants.length - 1; i++) {
             for (uint j = 0; j < participants.length - i - 1; j++) {
                 address addr1 = participants[j];
@@ -145,7 +142,6 @@ contract IPOCrossLaunch {
             }
         }
 
-        // Distribute tokens and refund USDC
         for (uint i = 0; i < participants.length && distributed < maxDistribution; i++) {
             address buyer = participants[i];
             if (hasOrder[buyer]) {
