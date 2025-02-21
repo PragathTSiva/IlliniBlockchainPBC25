@@ -24,77 +24,57 @@ To finalize the auction, run: `bun packages/cli/src/cli.ts finalize <IPO Cross a
 
 # Aptos Developer Chatbot
 
-This project is a chatbot (or “AI agent”) that answers Aptos developer questions in natural language. It is designed to provide relevant, accurate, and easy-to-digest answers by leveraging official Aptos documentation, GitHub repositories, and other trusted resources. The final deliverable is a working prototype built with a TypeScript-based chatbot UI (using Next.js) and a Flask-based backend powered by retrieval-augmented generation (RAG).
+The Aptos Developer Chatbot is a multi-agent system designed to deliver precise, context-aware answers to Aptos developer queries. Leveraging retrieval-augmented generation (RAG) techniques, it extracts verified information directly from official Aptos resources—ensuring that answers are both accurate and relevant.
 
 ---
 
 ## Overview
 
-**Objective:**  
-- Create an Aptos-focused QA model that accurately addresses technical questions about Move smart contracts, tooling, deployments, and more without “hallucinating” unrelated content.
-- Implement a user-friendly chatbot UI that fits seamlessly within existing Aptos documentation (e.g., embedding in [aptos.dev](https://github.com/aptos-labs/developer-docs)).
-- Leverage RAG search techniques to pull answers directly from official Aptos docs and GitHub repositories, ensuring content fidelity.
-- Enhance the user experience with features like suggested questions, conversation history, and brand-customized styling.
+This solution consists of two key components:
+
+- **Backend:** A Python/Flask server powered by the crewAI framework. It orchestrates a multi-agent workflow where specialized research agents query various Aptos-related data sources in parallel. Their results are combined into a single, cohesive markdown-formatted response. The backend also manages API endpoints and conversation state, allowing for both single-turn and multi-turn interactions.
+
+- **Frontend:** A modern, TypeScript-based chatbot UI built with Next.js. The interface provides features such as suggested questions, conversation history, and an easily embeddable design for integration into existing Aptos documentation platforms like aptos.dev.
 
 ---
 
-## Architecture and Components
+## Multi-Agent Workflow & Architecture
 
-### 1. Aptos-Focused QA Model
+The heart of the system is its multi-agent architecture, which operates as follows:
 
-- **Backend AI Agents:**  
-  The backend is built with Python using Flask and crewAI. It coordinates multiple specialized agents that search through various sources:
-  - **Aptos Core Repository:** For implementation details and code examples.
-  - **Aptos Full Stack Template:** For integration patterns and full-stack examples.
-  - **Aptos Developer Documentation:** For technical guides, tutorials, and API references.
- 
-  **Sources:**
-  - *'https://github.com/aptos-labs/aptos-core'*
-  - *'https://github.com/0xaptosj/aptos-full-stack-template'*
-  - *'https://github.com/aptos-labs/developer-docs'*
-  - *'https://learn.aptoslabs.com/'*
-  - *'https://aptos.dev/'*
+1. **API Interaction & Context Management:**  
+   - RESTful endpoints (e.g., `/ask`, `/conversation`) handle incoming queries and maintain conversation history.
+   - Session context is preserved across interactions to provide coherent multi-turn dialogues.
+
+2. **Parallel Research with Specialized Agents:**  
+   - The backend instantiates several research agents (each configured via YAML) to search distinct Aptos resources, such as core repositories, developer docs, and tutorials.
+   - Using asyncio, these agents run concurrently, each performing its assigned research task to gather targeted information.
+   - The concurrent operation ensures minimal latency and broad coverage of different information sources.
   
-- **Retrieval-Augmented Generation (RAG):**  
-  The system uses RAG to ensure that responses are drawn directly from trusted, up-to-date Aptos sources, minimizing the risk of incorrect or irrelevant responses.
-
-### 2. Chatbot UI
-
-- **Built with Next.js and TypeScript:**  
-  The frontend is crafted in TypeScript using Next.js to deliver a modern, responsive, and accessible chatbot interface.
-- **User-Friendly Features:**  
-  - **Suggested Questions:** UI buttons offer common developer queries like “How to deploy a Move module?” for quick interactions.
-  - **Conversation History:** Users can refer back to previous queries, enhancing context and continuity in dialogues.
-  - **Easy Integration:** The design and codebase provide a clear path to embedding the chatbot into existing Aptos documentation sites.
-
-### 3. How It Works
-
-- **Question Processing:**  
-  When a developer asks a question, the chatbot sends a request to the backend via a REST API.
-- **Backend Query Handling:**  
-  The Flask server receives the query, orchestrates multiple research agents through crewAI, and uses RAG to fetch relevant data from Aptos docs, GitHub repos, and other sources.
-- **Response Synthesis:**  
-  Results are aggregated, formatted in markdown, and sent back to the UI where the chatbot displays the answer.
-- **Maintaining Context:**  
-  Conversation history is maintained to support follow-up questions, ensuring that context is preserved throughout the session.
+       **Sources:**
+      - *'https://github.com/aptos-labs/aptos-core'*
+      - *'https://github.com/0xaptosj/aptos-full-stack-template'*
+      - *'https://github.com/aptos-labs/developer-docs'*
+      - *'https://learn.aptoslabs.com/'*
+      - *'https://aptos.dev/'*
+        
+3. **Results Aggregation & Synthesis:**  
+   - A dedicated synthesis process (reporting workflow) aggregates outputs from all agents.
+   - This process uses retrieval-augmented generation (RAG) techniques to combine and clean the data into a final, concise answer formatted in markdown.
+   - The final response integrates essential insights from each agent, ensuring the answer is comprehensive and developer-friendly.
 
 ---
 
-## Project Structure
+## Frontend Integration
 
-- **Frontend (aptos-ui):**  
-  - **`app/page.tsx`:** Entry point for the Next.js app.
-  - **`src/components/AptosAssistant.tsx`:** Implements the chatbot UI, including handling form input and displaying answers.
-  - **UI Assets:** Styled with Tailwind CSS to match Aptos branding.
+- **Chatbot UI Features:**  
+  Built with Next.js and TypeScript, the UI offers an intuitive chat interface, featuring:
+  - **Suggested Questions:** Predefined queries (e.g., “How to deploy a Move module?”) to prompt user interaction.
+  - **Conversation History:** Display of previous interactions to maintain context.
+  - **Embed-Ready Design:** Easily integrated into existing Aptos documentation platforms for a seamless developer experience.
 
-- **Backend (backend/aptos):**
-  - **`src/aptos/main.py`:** Flask application exposing API endpoints such as `/ask` that handle incoming queries.
-  - **`src/aptos/crew.py`:** Defines the AI agents and task orchestration using crewAI.
-  - **`config/agents.yaml` and `config/tasks.yaml`:** YAML files configuring the roles, goals, and task definitions for each agent.
-
-- **Documentation and Examples:**
-  - **`report.md`:** Example output report generated by the system that answers an Aptos-related query.
-  - **Test Scripts:** For instance, `test.py` to manually test the `/ask` endpoint.
+- **Seamless Communication:**  
+  The frontend communicates with the backend via REST API endpoints, ensuring prompt and interactive query responses.
 
 ---
 
@@ -104,19 +84,19 @@ This project is a chatbot (or “AI agent”) that answers Aptos developer quest
 
 1. **Prerequisites:**
    - Python (>=3.10, <3.13)
-   - Required packages (installed via `pip` or using crewAI's dependency handling)
-   - Create a `.env` file with necessary environment variables (e.g., `OPENAI_API_KEY`, GitHub tokens).
+   - Required Python packages installed via pip
+   - Environment variables configured in a `.env` file (e.g., `OPENAI_API_KEY`, GitHub tokens)
 
 2. **Installation:**
    ```bash
    pip install -r requirements.txt
    ```
 
-3. **Running the Backend:**
+3. **Run the Backend:**
    ```bash
    python backend/aptos/src/aptos/main.py
    ```
-   The backend API will be available at [http://localhost:8007](http://localhost:8007).
+   The API will be available at [http://localhost:8007](http://localhost:8007).
 
 ### Frontend Setup
 
@@ -129,49 +109,16 @@ This project is a chatbot (or “AI agent”) that answers Aptos developer quest
    npm install
    ```
 
-3. **Running the Frontend:**
+3. **Run the Frontend:**
    ```bash
    npm run dev
    ```
-   Visit [http://localhost:3000](http://localhost:3000) to interact with the chatbot.
-
----
-
-## Documentation of Approach
-
-- **Aptos-Specific Data Integration:**  
-  The project integrates data directly from Aptos official resources, including the Aptos Core repo, Full Stack Template, and Aptos Developer Documentation. This integration ensures answers are based on the latest and most reliable information available.
-
-- **Implementation of RAG:**  
-  Retrieval-augmented generation is configured within the crewAI framework. Multiple research agents perform parallel searches over pre-configured data sources, aggregating and summarizing relevant excerpts to form the final answer.
-
-- **Chatbot UI and Experience:**  
-  The UI is designed to be straightforward and intuitive:
-  - It accepts natural language queries.
-  - Provides suggested questions via clickable buttons (e.g., “How to deploy a Move module?”).
-  - Maintains a history of the conversation to preserve context.
-  - Styled to align with Aptos's branding and aesthetics.
-
-- **Potential Embed Integration:**  
-  With its modular and API-driven design, the chatbot can be easily embedded into existing Aptos developer sites like [aptos.dev](https://github.com/aptos-labs/developer-docs) or adapted into other formats to enhance developer documentation.
-
----
-
-## Future Enhancements
-
-- **Persistence and User Management:**  
-  Implement persistent conversation history with a database and add user authentication for personalized sessions.
-- **Error Handling and Logging:**  
-  Improve error management in both the backend and frontend for production readiness.
-- **Expanded Sources:**  
-  Incorporate additional data sources and research agents to cover more aspects of the Aptos ecosystem.
-- **Brand Customization:**  
-  Further align the look and feel with Aptos’s official branding, including logos, color schemes, and UI elements.
+   Access the chatbot UI at [http://localhost:3000](http://localhost:3000).
 
 ---
 
 ## Conclusion
 
-The Aptos Developer Chatbot is a robust prototype aimed at demystifying complex technical queries about Aptos. By combining state-of-the-art RAG techniques, specialized research agents, and a responsive TypeScript-based UI, this project offers a clear integration path into existing Aptos docs and developer tools. It not only enhances the accessibility of Aptos-related information but also paves the way for future improvements in AI-driven developer support.
+The Aptos Developer Chatbot represents a robust, multi-agent architecture that efficiently answers technical questions by aggregating data from trusted Aptos resources. Its parallel research workflow minimizes response time while ensuring accuracy, and its TypeScript-based UI offers a seamless, feature-rich user experience. This makes the chatbot an ideal tool for integrating into existing Aptos developer portals, enhancing support and productivity.
 
-Happy coding and welcome to the future of Aptos developer support!
+Happy coding, and enjoy your enhanced Aptos experience!
