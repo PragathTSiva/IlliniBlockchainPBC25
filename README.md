@@ -47,6 +47,13 @@ This project is a chatbot (or “AI agent”) that answers Aptos developer quest
   - **Aptos Core Repository:** For implementation details and code examples.
   - **Aptos Full Stack Template:** For integration patterns and full-stack examples.
   - **Aptos Developer Documentation:** For technical guides, tutorials, and API references.
+ 
+  **Sources:**
+  - *'https://github.com/aptos-labs/aptos-core'*
+  - *'https://github.com/0xaptosj/aptos-full-stack-template'*
+  - *'https://github.com/aptos-labs/developer-docs'*
+  - *'https://learn.aptoslabs.com/'*
+  - *'https://aptos.dev/'*
   
 - **Retrieval-Augmented Generation (RAG):**  
   The system uses RAG to ensure that responses are drawn directly from trusted, up-to-date Aptos sources, minimizing the risk of incorrect or irrelevant responses.
