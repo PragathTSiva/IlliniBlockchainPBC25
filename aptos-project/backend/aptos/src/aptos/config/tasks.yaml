@@ -1,0 +1,48 @@
+aptos_core_research_task:
+  description: >
+    Search through the Aptos Core repository to find implementation details and code examples about "{topic}".
+  expected_output: >
+    A list of relevant code examples and implementation details from the Aptos Core repository.
+  agent: aptos_core_researcher
+
+aptos_full_stack_research_task:
+  description: >
+    Search through the Aptos Full Stack Template to find integration patterns and examples about "{topic}".
+  expected_output: >
+    A list of relevant full-stack implementation examples and patterns.
+  agent: aptos_full_stack_researcher
+
+aptos_developer_docs_research_task:
+  description: >
+    Search through the Aptos Developer Documentation repository for information about "{topic}".
+  expected_output: >
+    A list of relevant documentation excerpts and technical explanations.
+  agent: aptos_developer_docs_researcher
+
+learn_aptoslabs_docs_research_task:
+  description: >
+    Search through learn.aptoslabs.com for tutorials and guides about "{topic}".
+  expected_output: >
+    A list of relevant tutorials and learning resources.
+  agent: learn_aptoslabs_researcher
+
+aptos_dev_docs_research_task:
+  description: >
+    Search through aptos.dev for technical documentation about "{topic}".
+  expected_output: >
+    A list of relevant technical documentation and API references.
+  agent: aptos_dev_docs_researcher
+
+reporting_task:
+  description: >
+    Review and synthesize the collected research about "{topic}" into a clear, practical answer.
+    Your response should:
+    - Focus on providing actionable guidance and relevant code examples
+    - Organize information in a clear, logical flow
+    - Include specific implementation details where relevant
+    - Reference official documentation and resources when appropriate
+    - Format the response in clear markdown with proper code blocks
+  expected_output: >
+    A comprehensive, developer-friendly response that directly answers the question about {topic},
+    including relevant code examples, implementation steps, and references to official resources.
+  agent: reporting_analyst
