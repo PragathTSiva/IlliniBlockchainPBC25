@@ -21,7 +21,6 @@ To finalize the auction, run: `bun packages/cli/src/cli.ts finalize <IPO Cross a
 
 
 
-#Aptos AI Dev Assistant
 
 # Aptos Developer Chatbot
 
