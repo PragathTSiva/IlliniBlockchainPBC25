@@ -26,5 +26,5 @@ export async function getShieldedContractWithCheck(
 
 export function readContractABI(path: string): Abi {
   const abiJson = fs.readFileSync(path, 'utf-8')
-  return JSON.parse(abiJson) as Abi
+  return JSON.parse(abiJson).abi as Abi
 }
