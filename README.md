@@ -1,5 +1,9 @@
 # Initial Public Offering System
 
+## Demo Media
+- **Video:** [Watch Video](https://youtu.be/mdMGrJD8Dw0)
+- **Presentation:** [View Presentation](https://he-s3.s3.amazonaws.com/media/sprint/pbc-hackathon-25/team/2231935/cd5c069launchpresentation.pptx)
+
 To build ABIs for a smart contract: `sforge build`
 
 To bring up the validator: `sanvil`
@@ -14,15 +18,13 @@ To submit orders, run: `bun packages/cli/src/cli.ts submit-orders <IPO Cross add
 
 To finalize the auction, run: `bun packages/cli/src/cli.ts finalize <IPO Cross address>`
 
-
-
-
-
-
-
-
+---
 
 # Aptos Developer Chatbot
+
+## Demo Media
+- **Video:** [Watch Video](https://youtu.be/Ga4qzSELHWk)
+- **Presentation:** [View Presentation](https://he-s3.s3.amazonaws.com/media/sprint/pbc-hackathon-25/team/2231935/fc2cafbpitch_deck.pdf)
 
 The Aptos Developer Chatbot is a multi-agent system designed to deliver precise, context-aware answers to Aptos developer queries. Leveraging retrieval-augmented generation (RAG) techniques, it extracts verified information directly from official Aptos resources—ensuring that answers are both accurate and relevant.
 
@@ -90,7 +92,6 @@ The heart of the system is its multi-agent architecture, which operates as follo
 2. **Installation:**
    ```bash
    pip install -r requirements.txt
-   ```
 
 3. **Run the Backend:**
    ```bash
